@@ -1,0 +1,150 @@
+/*----------------------------------------------------------------------------*/
+/*                                                                            */
+/*    Module:       main.cpp                                                  */
+/*    Author:       VEX                                                       */
+/*    Created:      Wed Sep 25 2019                                           */
+/*    Description:  Clawbot (Drivetrain) - Template                           */
+/*                                                                            */
+/*    Name:                                                                   */
+/*    Date                                                                    */
+/*    Class:                                                                  */
+/*                                                                            */
+/*----------------------------------------------------------------------------*/
+ 
+// ---- START VEXCODE CONFIGURED DEVICES ----
+// Robot Configuration:
+// [Name]               [Type]        [Port(s)]
+// Drivetrain           drivetrain    1, 10, D
+// ClawMotor            motor         3
+// ArmMotor             motor         8
+// ---- END VEXCODE CONFIGURED DEVICES ----
+ 
+#include "vex.h"
+ 
+using namespace vex;
+ 
+vex::motor        RightMotor =      vex::motor(vex::PORT1, ratio18_1, false);
+vex::motor        LeftMotor =       vex::motor(vex::PORT2, ratio18_1, true);
+vex::motor        ConveyorMotor =   vex::motor(vex::PORT3, ratio18_1, true);
+vex::motor        GrabMotor =       vex::motor(vex::PORT4, ratio18_1, true);
+vex::controller   Controller1 =     vex::controller();
+vex::drivetrain   Drivetrain =      vex::drivetrain(LeftMotor, RightMotor, 319.19, 295, 40, mm, 1);
+vex::competition  Competition;
+ 
+/*---------------------------------------------------------------------------*/
+/*                                                                           */
+/*                             Autonomous Task                               */
+/*                                                                           */
+/* This task is used to control your robot during the autonomous phase of    */
+/* a VEX Competition.                                                        */
+/*                                                                           */
+/* You must modify the code to add your own robot specific commands here.    */
+/*---------------------------------------------------------------------------*/
+void pre_auton(void) {
+ // Initializing Robot Configuration. DO NOT REMOVE!
+ vexcodeInit();
+ // All activities that occur before the competition starts
+ // Example: clearing encoders, setting servo positions, ...
+}
+ 
+void autonomous (void) {
+ // ..........................................................................
+ // Insert autonomous user code here.
+ // ..........................................................................
+  // Initializing movement values for autonomous period
+ LeftMotor.setVelocity(50, velocityUnits::pct);
+ RightMotor.setVelocity(50, velocityUnits::pct);
+ GrabMotor.spin(vex::directionType::rev, 35, vex::velocityUnits::pct);
+ wait(250, msec);
+ GrabMotor.stop();
+ 
+ // Complicated movement
+ Drivetrain.driveFor(forward, 65, inches);
+ GrabMotor.spin(vex::directionType::fwd, 75, vex::velocityUnits::pct);
+ wait(100, msec);
+ GrabMotor.stop();
+ /*for (int i = 0; i < 10; i++) {
+   GrabMotor.spin(vex::directionType::fwd, 95, vex::velocityUnits::pct);
+   wait(1, msec);
+   GrabMotor.stop();
+   Drivetrain.driveFor(reverse, 5, inches);
+ } */
+ Drivetrain.driveFor(reverse, 50, inches);
+}
+ 
+/*---------------------------------------------------------------------------*/
+/*                                                                           */
+/*                            User Control Task                              */
+/*                                                                           */
+/* This task is used to control your robot during the user control phase of  */
+/* a VEX Competition.                                                        */
+/*                                                                           */
+/* You must modify the code to add your own robot specific commands here.    */
+/*---------------------------------------------------------------------------*/
+void usercontrol(void) {
+ LeftMotor.setVelocity(100, velocityUnits::pct);
+ RightMotor.setVelocity(100, velocityUnits::pct);
+ while(1) {
+   // This is the main execution loop for the user control program.
+   // Each time through the loop your program should update motor + servo
+   // values based on feedback from the joysticks.
+ 
+   int rightMotorSpeed = Controller1.Axis3.position() - Controller1.Axis4.position();
+   int leftMotorSpeed = Controller1.Axis3.position() + Controller1.Axis4.position();
+ 
+   if (rightMotorSpeed <= 8 && rightMotorSpeed >= -8) {
+     rightMotorSpeed = 0;
+   }
+ 
+   if (leftMotorSpeed <= 8 && leftMotorSpeed >= -8) {
+     leftMotorSpeed = 0;
+   }
+ 
+   if (Controller1.Axis3.position() != 0 || Controller1.Axis4.position() != 0) {
+     LeftMotor.spin(vex::directionType::fwd, leftMotorSpeed, vex::velocityUnits::pct);
+     RightMotor.spin(vex::directionType::fwd, rightMotorSpeed, vex::velocityUnits::pct);
+   }
+   else {
+     LeftMotor.stop();
+     RightMotor.stop();
+   }
+ 
+   // Conveyor Belt Program
+   if (Controller1.ButtonA.pressing()) {
+     ConveyorMotor.spin(vex::directionType::fwd, 100, vex::velocityUnits::pct);
+   }
+   else if (Controller1.ButtonB.pressing()) {
+     ConveyorMotor.stop();
+   }
+ 
+   // Grab Program
+   if (Controller1.ButtonY.pressing()) {
+     GrabMotor.spin(vex::directionType::fwd, 40, vex::velocityUnits::pct);
+   }
+   else if (Controller1.ButtonX.pressing()) {
+     GrabMotor.spin(vex::directionType::rev, 40, vex::velocityUnits::pct);
+   }
+   else {
+     GrabMotor.stop();
+   }
+  
+   vex::task::sleep(20); // Sleep task to prevent wasted resources
+ }
+}
+ 
+//
+// Main will set up the competition functions and callbacks.
+//
+int main() {
+ // Set up callbacks for autonomous and driver control periods.
+ Competition.autonomous(autonomous);
+ Competition.drivercontrol(usercontrol);
+ 
+ // Run the pre-autonomous function.
+ pre_auton();
+ 
+ // Prevent main from exiting with an infinite loop.
+ while (true) {
+ wait(100, msec);
+ }
+}
